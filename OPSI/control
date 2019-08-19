@@ -1,0 +1,32 @@
+[Package]
+version: 1
+depends: 
+incremental: False
+
+[Product]
+type: localboot
+id: teska-shutdown-timer
+name: teska-shutdown-timer
+description: Herunterfahren der Clients täglich per Task und Abfrage, falls jemand angemeldet ist
+advice: 
+version: 1.0
+priority: 0
+licenseRequired: False
+productClasses: 
+setupScript: setup.opsiscript
+uninstallScript: uninstall.opsiscript
+updateScript: 
+alwaysScript: 
+onceScript: 
+customScript: 
+userLoginScript: 
+
+[ProductProperty]
+type: unicode
+name: val_shutdowntime
+multivalue: False
+editable: True
+description: Shutdown Time of Clients
+values: ["17:00", "18:00", "19:00"]
+default: ["18:00"]
+

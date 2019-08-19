@@ -1,0 +1,6 @@
+f 'delsub.opsiscript' 2807 eaf92e166452782c28af24802a91e25e
+f 'shutdown_second_system.ps1' 3087 502765203febd2302f1c67a326c2a40c
+f 'shutdown_first_user.ps1' 2891 78e5ce0b9df36eb7b263ba6fa472dc86
+f 'setup.opsiscript' 5933 733b32cf43c5fceb86b414609b012d88
+f 'check_msi_exitcode.opsiscript' 10504 f82e313411afaa386573fdcf90e4c45a
+f 'uninstall.opsiscript' 2207 55b859ae3b0f1627252463f5edc1ec0f

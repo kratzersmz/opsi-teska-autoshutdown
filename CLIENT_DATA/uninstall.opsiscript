@@ -1,0 +1,97 @@
+; Copyright (c) uib gmbh (www.uib.de)
+; This sourcecode is owned by uib gmbh
+; and published under the Terms of the General Public License.
+; credits: http://www.opsi.org/en/credits/
+
+[Actions]
+requiredWinstVersion >= "4.11.3.3"
+
+DefVar $SetupType$
+DefVar $MsiId$
+DefVar $LogDir$
+DefVar $ExitCode$
+DefVar $ErrorMsg$
+DefVar $ProductId$
+DefVar $InstallDir$
+DefVar $LicenseRequired$
+DefVar $LicensePool$
+
+Set $LogDir$ = "%opsiLogDir%"
+
+; ----------------------------------------------------------------; ----------------------------------------------------------------
+Set $SetupType$ = "msi"
+; ----------------------------------------------------------------; ----------------------------------------------------------------
+
+; ----------------------------------------------------------------; ----------------------------------------------------------------
+; - Please check the following values                             -
+; ----------------------------------------------------------------
+Set $ProductId$       = "adobe-connect-application"
+Set $InstallDir$      = "(not used)"
+Set $LicenseRequired$ = "false"
+Set $LicensePool$     = "p_" + $ProductId$
+; ----------------------------------------------------------------
+
+
+comment "Show product picture"
+ShowBitmap "%ScriptPath%\" + $ProductId$ + ".png" $ProductId$
+
+Message "Uninstalling " + $ProductId$ + " ..."
+
+if FileExists("%ScriptPath%\delsub.opsiscript")
+   comment "Start uninstall sub section"
+   Sub "%ScriptPath%\delsub.opsiscript"
+endif
+
+if $LicenseRequired$ = "true"
+   comment "Licensing required, free license used"
+   Sub_free_license
+endif
+
+
+
+
+ comment "Start setup program"
+   ChangeDirectory "%SCRIPTPATH%"
+   ;----------------------------------------------
+   DosInAnIcon_setpolicy
+   ExecWith_powershell  powershell.exe
+   set $exitcode$ = getLastExitcode
+   if not ($exitcode$ = "0")
+        comment "powershell script failed"
+   endif
+
+   ;----------------------------------------------
+   Sub_check_exitcode	
+endif
+
+
+
+
+
+[DosInAnIcon_setpolicy]
+echo "powershell set-executionpolicy RemoteSigned ..."
+powershell.exe set-executionpolicy RemoteSigned
+exit %ERRORLEVEL%
+
+[ExecWith_powershell]
+ipmo ScheduledTasks
+Unregister-ScheduledTask -TaskName "teska-shutdown-timer-first" -Confirm:$false
+Unregister-ScheduledTask -TaskName "teska-shutdown-timer-second" -Confirm:$false
+if ($?) {Exit(0)}
+else {Exit(1)}
+
+
+[Sub_free_license]
+comment "License management is enabled and will be used"
+
+comment "Trying to free license used for the product"
+DefVar $result$
+Set $result$ = FreeLicense($LicensePool$)
+; If there is an assignment of a license pool to the product, it is possible to use
+; Set $result$ = FreeLicense("", $ProductId$)
+;
+; If there is an assignment of a license pool to a windows software id, it is possible to use
+; DefVar $WindowsSoftwareId$
+; $WindowsSoftwareId$ = "..."
+; set $result$ = FreeLicense("", "", $WindowsSoftwareId$)
+
