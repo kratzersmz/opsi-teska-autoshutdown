@@ -102,8 +102,6 @@ $Tasktrigger =  New-ScheduledTaskTrigger -Daily -At $Wann
 $STPrincipal = New-ScheduledTaskPrincipal -GroupId "Benutzer" -RunLevel "Highest"
 $settings = New-ScheduledTaskSettingsSet -Compatibility Win8
 Register-ScheduledTask -Action $TaskAction -Trigger $Tasktrigger -TaskName $TaskName  -Principal $STPrincipal -Settings $settings
-if ($?) {Exit(0)}
-else {Exit(1)}
 
 #Addiere neue Zeit + 10 Min auf vorhandene
 [datetime]$stringToDatetime = '$ShutdownTime$' | Get-Date -Format HH:mm
