@@ -88,8 +88,6 @@ $Wann = '$ShutdownTime$'
 $TaskName = "teska-shutdown-timer-first"
 $Tasktrigger = New-ScheduledTaskTrigger -Daily -At $Wann
 Set-ScheduledTask -Trigger $Tasktrigger -TaskName $TaskName
-if ($?) {Exit(0)}
-else {Exit(1)}
 
 #Addiere neue Zeit + 10 Min auf vorhandene
 [datetime]$stringToDatetime = '$ShutdownTime$' | Get-Date -Format HH:mm
