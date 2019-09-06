@@ -15,7 +15,7 @@ licenseRequired: False
 productClasses: 
 setupScript: setup.opsiscript
 uninstallScript: uninstall.opsiscript
-updateScript: 
+updateScript: update.opsiscript
 alwaysScript: 
 onceScript: 
 customScript: 

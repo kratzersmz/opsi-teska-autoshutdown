@@ -1,0 +1,149 @@
+﻿; ----------------------------------------------------------------
+; Copyright (c) uib gmbh (www.uib.de)
+; This sourcecode is owned by uib
+; and published under the Terms of the General Public License.
+; credits: http://www.opsi.org/en/credits/
+; ----------------------------------------------------------------
+
+
+[Actions]
+requiredWinstVersion >= "4.11.4.3"
+ScriptErrorMessages = false
+
+DefVar $SetupType$
+DefVar $ProductId$ 
+DefVar $Setupfile$ 
+DefVar $InstallDir$
+DefVar $MinimumSpace$
+DefVar $ExitCode$
+DefVar $ErrorMsg$
+DefVar $LicenseRequired$
+DefVar $LicenseKey$
+DefVar $LicensePool$
+DefVar $MsiId$
+DefVar $NsisInstallBatch$
+DefVar $LogDir$
+
+Set $LogDir$ = "%opsiLogDir%"
+
+
+; ----------------------------------------------------------------
+; ----------------------------------------------------------------
+
+; $ProductId$ is the name of the product in opsi, only lower letters, no umlauts, no white spaces, use '-' as a seperator
+Set $ProductId$       = "teska-shutdown-timer"
+; the path where we find the product after the installation
+Set $InstallDir$      = "(not used)"
+Set $LicenseRequired$ = "false"
+Set $LicensePool$     = "p_" + $ProductId$
+Set $MinimumSpace$    = "1 MB"
+
+DefVar $ShutdownTime$
+Set $ShutdownTime$ = GetProductProperty("val_shutdowntime", "18:00")
+; ----------------------------------------------------------------
+; ----------------------------------------------------------------
+
+if not(HasMinimumSpace ("%SystemDrive%", $MinimumSpace$))
+   LogError "Not enough space on %SystemDrive%, " + $MinimumSpace$ + " on drive %SystemDrive% needed for " + $ProductId$
+   isFatalError "No Space"
+   ; Stop process and set installation status to failed
+else
+   
+   Message "Installing " + $ProductId$ + " ..."
+   
+   if $LicenseRequired$ = "true"
+      comment "Licensing required, reserve license and get license key"
+      Sub_get_licensekey
+   endif
+
+   
+   comment "Start setup program"
+   ChangeDirectory "%SCRIPTPATH%"
+   ;----------------------------------------------
+   DosInAnIcon_setpolicy
+   ExecWith_powershell  powershell.exe
+   set $exitcode$ = getLastExitcode
+   if not ($exitcode$ = "0")
+        comment "powershell script failed"
+   endif
+
+   ;----------------------------------------------
+endif
+
+
+; ----------------------------------------------------------------
+; install section
+; ----------------------------------------------------------------
+
+[DosInAnIcon_setpolicy]
+echo "powershell set-executionpolicy RemoteSigned ..."
+powershell.exe set-executionpolicy RemoteSigned
+exit %ERRORLEVEL%
+
+[ExecWith_powershell]
+#Erstelle ersten Timer, welcher dem angemeldeten User in seiner Session angezeigt wird
+ipmo ScheduledTasks
+$Wann = '$ShutdownTime$'
+
+$TaskName = "teska-shutdown-timer-first"
+$Tasktrigger = New-ScheduledTaskTrigger -Daily -At $Wann
+Set-ScheduledTask -Trigger $Tasktrigger -TaskName $TaskName
+if ($?) {Exit(0)}
+else {Exit(1)}
+
+#Addiere neue Zeit + 10 Min auf vorhandene
+[datetime]$stringToDatetime = '$ShutdownTime$' | Get-Date -Format HH:mm
+[datetime]$newTime = $stringToDatetime.AddMinutes(10)
+$newTimeStr = $newTime.ToString("HH:mm")
+
+#Erstelle zweiten Timer, welcher als System ausgeführt wird. Das PS Script sollte checken, ob ein "" angemeldet ist, falls ja, nichts weiter tun
+$TaskName2 = "teska-shutdown-timer-second"
+$Tasktrigger2 =  New-ScheduledTaskTrigger -Daily -At $newTimeStr
+Set-ScheduledTask -Trigger $Tasktrigger2 -TaskName $TaskName2
+if ($?) {Exit(0)}
+else {Exit(1)}
+
+
+; ----------------------------------------------------------------
+
+
+[Sub_get_licensekey]
+if opsiLicenseManagementEnabled
+   comment "License management is enabled and will be used"
+
+   comment "Trying to get a license key"
+   Set $LicenseKey$ = demandLicenseKey ($LicensePool$)
+   ; If there is an assignment of exactly one licensepool to the product the following call is possible:
+   ; Set $LicenseKey$ = demandLicenseKey ("", $ProductId$)
+   ;
+   ; If there is an assignment of a license pool to a windows software id, it is possible to use:
+   ; DefVar $WindowsSoftwareId$
+   ; $WindowsSoftwareId$ = "..."
+   ; Set $LicenseKey$ = demandLicenseKey ("", "", $WindowsSoftwareId$)
+
+   DefVar $ServiceErrorClass$
+   set $ServiceErrorClass$ = getLastServiceErrorClass
+   comment "Error class: " + $ServiceErrorClass$
+   
+   if $ServiceErrorClass$ = "None"
+      comment "Everything fine, we got the license key '" + $LicenseKey$ + "'"
+   else
+      if $ServiceErrorClass$ = "LicenseConfigurationError"
+         LogError "Fatal: license configuration must be corrected"
+         LogError getLastServiceErrorMessage
+         isFatalError
+      else 
+         if $ServiceErrorClass$ = "LicenseMissingError"
+            LogError "Fatal: required license is not supplied"
+            isFatalError
+         endif
+      endif
+   endif
+else
+   LogError "Fatal: license required, but license management not enabled"
+   isFatalError
+endif
+
+; ----------------------------------------------------------------
+; ----------------------------------------------------------------
+
