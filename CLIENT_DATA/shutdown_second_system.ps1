@@ -1,4 +1,4 @@
-﻿#cls
+﻿#Script mainly copied from a ressource on the internet, dont no where anymore, so original programmer sorry!!!
 #Set-ExecutionPolicy -Bypass
 $countdown = 10 # in seconds
 [void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
